@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pannello di Controllo Amministratore</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-white font-sans min-h-screen p-6">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        <header class="border-b border-slate-700 pb-4 flex justify-between items-center">
+            <h1 class="text-3xl font-black text-red-500">Pannello Admin Privato 🔐</h1>
+            <a href="index.html" class="text-sm bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600">Torna al Sito Pubblico</a>
+        </header>
+
+        <div class="bg-slate-800 p-6 rounded-2xl shadow-xl">
+            <h2 class="text-xl font-bold mb-4 text-purple-400">Gestione Utenti (Nomi e Punti Aura)</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400">
+                            <th class="p-3">ID Utente</th>
+                            <th class="p-3">Username</th>
+                            <th class="p-3">Punti Aura</th>
+                            <th class="p-3">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabella-utenti">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2d3d4Zmd1dGNsZGNxdWNlam14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDA3MDUsImV4cCI6MjA5OTI3NjcwNX0.sPyLXmkhFWnvYodebB2210T53OqKpOfJRXiQPirzKLw";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2d3d4Zmd1dGNsZGNxdWNlam14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzcwMDcwNSwiZXhwIjoyMDk5Mjc2NzA1fQ.FWVmx5S4ogyrpCo29B337CuPkCvqVUodjZ9tiUQJhbU";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function caricaTuttiGliUtenti() {
+            const { data, error } = await supabase.from('profili').select('*');
+            const tbody = document.getElementById('tabella-utenti');
+            tbody.innerHTML = "";
+            
+            if(data) {
+                data.forEach(ut => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-700/50 hover:bg-slate-750">
+                            <td class="p-3 font-mono text-xs text-slate-500">${ut.id.substring(0,8)}...</td>
+                            <td class="p-3 font-semibold">${ut.username}</td>
+                            <td class="p-3 text-amber-400 font-bold">${ut.punti_aura} Aura</td>
+                            <td class="p-3 space-x-2">
+                                <button onclick="modificaAura('${ut.id}', ${ut.punti_aura + 10})" class="bg-emerald-600 hover:bg-emerald-700 text-xs px-2 py-1 rounded">+10 Aura</button>
+                                <button onclick="modificaAura('${ut.id}', ${ut.punti_aura - 10})" class="bg-amber-600 hover:bg-amber-700 text-xs px-2 py-1 rounded">-10 Aura</button>
+                                <button onclick="eliminaProfilo('${ut.id}')" class="bg-red-600 hover:bg-red-700 text-xs px-2 py-1 rounded">Rimuovi</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function modificaAura(id, nuoviPunti) {
+            if(nuoviPunti < 0) nuoviPunti = 0;
+            const { error } = await supabase.from('profili').update({ punti_aura: nuoviPunti }).eq('id', id);
+            if (error) alert(error.message);
+            else caricaTuttiGliUtenti();
+        }
+
+        async function eliminaProfilo(id) {
+            if(confirm("Sei sicuro di voler rimuovere questo utente dal database dei punteggi?")) {
+                await supabase.from('profili').delete().eq('id', id);
+                caricaTuttiGliUtenti();
+            }
+        }
+
+        // Carica subito i dati all'apertura
+        caricaTuttiGliUtenti();
+    </script>
+</body>
+</html>

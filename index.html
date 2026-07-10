@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aura Network - Gruppi e Gemme</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.js"></script>
 </head>
 <body class="bg-slate-900 text-white font-sans min-h-screen flex flex-col items-center justify-center p-4">
 
@@ -24,8 +24,8 @@
                 <label class="block text-sm font-medium mb-1">Password</label>
                 <input type="password" id="password" class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:border-purple-500">
             </div>
-            <button onclick="registrati()" class="w-full bg-purple-600 hover:bg-purple-700 p-3 rounded-lg font-semibold transition">Registrati</button>
-            <button onclick="accedi()" class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded-lg font-semibold transition">Accedi</button>
+            <button onclick="registrati()" class="w-full bg-purple-600 hover:bg-purple-700 p-3 rounded-lg font-semibold transition cursor-pointer">Registrati</button>
+            <button onclick="accedi()" class="w-full bg-slate-700 hover:bg-slate-600 p-3 rounded-lg font-semibold transition cursor-pointer">Accedi</button>
         </div>
     </div>
 
@@ -40,26 +40,25 @@
                 <div id="aura-points" class="text-3xl font-black text-amber-400">0</div>
                 <div id="gemma-status" class="mt-1 text-xs font-bold px-2 py-0.5 rounded-full bg-purple-900 text-purple-200">Caricamento...</div>
             </div>
-            <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg">Esci</button>
+            <button onclick="logout()" class="text-sm bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg cursor-pointer">Esci</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-slate-800 p-6 rounded-2xl shadow-xl">
                 <h3 class="text-xl font-bold mb-4">Crea un nuovo Gruppo</h3>
                 <input type="text" id="nome-gruppo" class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 mb-3" placeholder="Nome del gruppo">
-                <button onclick="creaGruppo()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-3 rounded-lg font-semibold transition">Genera Gruppo e Codice</button>
+                <button onclick="creaGruppo()" class="w-full bg-emerald-600 hover:bg-emerald-700 p-3 rounded-lg font-semibold transition cursor-pointer">Genera Gruppo e Codice</button>
             </div>
             <div class="bg-slate-800 p-6 rounded-2xl shadow-xl">
                 <h3 class="text-xl font-bold mb-4">Entra in un Gruppo</h3>
                 <input type="text" id="codice-gruppo" class="w-full p-3 rounded-lg bg-slate-700 border border-slate-600 mb-3" placeholder="Inserisci codice a 6 cifre" maxlength="6">
-                <button onclick="entraGruppo()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-semibold transition">Unisciti</button>
+                <button onclick="entraGruppo()" class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded-lg font-semibold transition cursor-pointer">Unisciti</button>
             </div>
         </div>
 
         <div class="bg-slate-800 p-6 rounded-2xl shadow-xl">
             <h3 class="text-xl font-bold mb-4">I tuoi Gruppi</h3>
-            <div id="lista-gruppi" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300">
-                </div>
+            <div id="lista-gruppi" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-300"></div>
         </div>
     </div>
 
@@ -67,11 +66,12 @@
         // CONFIGURAZIONE SUPABASE
         const SUPABASE_URL = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2d3d4Zmd1dGNsZGNxdWNlam14Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDA3MDUsImV4cCI6MjA5OTI3NjcwNX0.sPyLXmkhFWnvYodebB2210T53OqKpOfJRXiQPirzKLw";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind2d3d4Zmd1dGNsZGNxdWNlam14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzcwMDcwNSwiZXhwIjoyMDk5Mjc2NzA1fQ.FWVmx5S4ogyrpCo29B337CuPkCvqVUodjZ9tiUQJhbU";
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Inizializzazione corretta per la versione globale (window.supabase)
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let utenteCorrente = null;
 
-        // Funzione per calcolare la rarità della gemma
         function calcolaGemma(punti) {
             if (punti < 10) return "🪨 Gemma di Rame (Comune)";
             if (punti < 50) return "🔮 Cristallo di Luce (Raro)";
@@ -80,36 +80,62 @@
         }
 
         async function controllaSettaggioIniziale() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                utenteCorrente = user;
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('dashboard-section').classList.remove('hidden');
-                caricaDatiProfilo();
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (user) {
+                    utenteCorrente = user;
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('dashboard-section').classList.remove('hidden');
+                    caricaDatiProfilo();
+                }
+            } catch(e) {
+                console.error("Errore connessione iniziale:", e);
             }
         }
-        controllaSettaggioIniziale();
+        
+        // Aspetta che la libreria sia caricata prima di controllare l'utente
+        window.onload = () => {
+            controllaSettaggioIniziale();
+        };
 
         async function registrati() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const username = document.getElementById('username').value;
 
+            if(!email || !password || !username) {
+                return alert("Riempi tutti i campi (Email, Username e Password)!");
+            }
+
+            alert("Invio richiesta di registrazione in corso...");
+
             const { data, error } = await supabase.auth.signUp({ email, password });
-            if (error) return alert(error.message);
+            
+            if (error) {
+                return alert("Errore Supabase Auth: " + error.message);
+            }
 
             if (data.user) {
-                // Crea il profilo specchio nel database dei punti
-                await supabase.from('profili').insert([{ id: data.user.id, username: username, punti_aura: 0, ruolo: 'utente' }]);
-                alert("Registrazione completata! Controlla la tua email se richiesto, oppure effettua l'accesso.");
+                const { error: dbError } = await supabase.from('profili').insert([{ id: data.user.id, username: username, punti_aura: 0, ruolo: 'utente' }]);
+                if(dbError) {
+                    return alert("Account creato, ma errore nel database profili: " + dbError.message);
+                }
+                alert("Registrazione completata con successo! Ora prova a fare 'Accedi'.");
             }
         }
 
         async function accedi() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            
+            if(!email || !password) {
+                return alert("Inserisci Email e Password per accedere!");
+            }
+
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) return alert(error.message);
+            if (error) return alert("Errore Accesso: " + error.message);
+            
+            alert("Accesso eseguito!");
             location.reload();
         }
 
@@ -120,16 +146,18 @@
                 document.getElementById('aura-points').innerText = data.punti_aura;
                 document.getElementById('gemma-status').innerText = calcolaGemma(data.punti_aura);
                 caricaGruppi();
+            } else if (error) {
+                console.error("Errore profilo:", error.message);
             }
         }
 
         async function creaGruppo() {
             const nome = document.getElementById('nome-gruppo').value;
             if(!nome) return alert("Inserisci un nome per il gruppo");
-            const codice = Math.floor(100000 + Math.random() * 900000).toString(); // Genera 6 cifre random
+            const codice = Math.floor(100000 + Math.random() * 900000).toString();
 
             const { error } = await supabase.from('gruppi').insert([{ nome, codice, creatore_id: utenteCorrente.id }]);
-            if (error) alert(error.message);
+            if (error) alert("Errore creazione gruppo: " + error.message);
             else {
                 alert(`Gruppo creato! Codice d'accesso: ${codice}`);
                 caricaGruppi();
